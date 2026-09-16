@@ -10,6 +10,18 @@ const ENDPOINT = {
   tiktok: (u) => `https://www.tiktok.com/oembed?url=${encodeURIComponent(u)}`,
 };
 const stripScripts = (h) => h.replace(/<script[\s\S]*?<\/script>/gi, '').trim();
+// 共有リンクの余計な部分を落とす（X の /video/1、?s=46、TikTok の ?_t= など）
+function normalizeUrl(u) {
+  const url = new URL(u);
+  url.search = '';
+  url.hash = '';
+  if (/(^|\.)(x|twitter)\.com$/.test(url.hostname)) {
+    url.hostname = 'x.com';
+    const m = url.pathname.match(/^\/([^/]+)\/status\/(\d+)/);
+    if (m) url.pathname = `/${m[1]}/status/${m[2]}`;
+  }
+  return url.toString();
+}
 const today = new Date().toISOString().slice(0, 10);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -26,7 +38,7 @@ for (const f of files) {
   if (v.status === 'hidden' || !ENDPOINT[v.platform]) continue;
 
   try {
-    const res = await fetch(ENDPOINT[v.platform](v.url), { headers: { 'user-agent': 'shortvideo-site/1.0' } });
+    const res = await fetch(ENDPOINT[v.platform](normalizeUrl(v.url)), { headers: { 'user-agent': 'shortvideo-site/1.0' } });
     if (res.status === 404 || res.status === 400) {
       next[id] = { ok: false, error: `HTTP ${res.status}`, checked_at: today };
       ng.push(`${id}  ${v.url}  (HTTP ${res.status})`);
