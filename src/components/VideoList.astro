@@ -1,0 +1,24 @@
+---
+import Embed from './Embed.astro';
+import type { VideoView } from '../lib/videos';
+interface Props { videos: VideoView[]; ranked?: boolean }
+const { videos, ranked = false } = Astro.props;
+---
+<ol class="video-list" class:list={{ ranked }}>
+  {videos.map((v, i) => (
+    <li class="video">
+      <h3>{ranked && <span class="rank">{i + 1}位</span>}{v.data.title}</h3>
+      <p class="comment">{v.data.comment}{v.data.author && <span class="author"> — {v.data.author}</span>}</p>
+      <Embed platform={v.data.platform} html={v.html} url={v.data.url} title={v.data.title} />
+    </li>
+  ))}
+</ol>
+
+<style>
+  .video-list { list-style: none; padding: 0; margin: 0; }
+  .video { padding: 24px 0; border-bottom: 1px solid #e5e5e5; }
+  .video h3 { font-size: 16px; margin: 0 0 4px; }
+  .rank { display: inline-block; margin-right: 8px; padding: 0 8px; background: #1a1a1a; color: #fff; border-radius: 4px; font-size: 13px; }
+  .comment { margin: 0 0 12px; font-size: 14px; color: #444; }
+  .author { color: #888; }
+</style>

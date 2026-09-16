@@ -1,0 +1,20 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import VideoList from '../../components/VideoList.astro';
+import { getCollection } from 'astro:content';
+import { byIds } from '../../lib/videos';
+
+export async function getStaticPaths() {
+  const weeks = await getCollection('weeks');
+  return weeks.map((w) => ({ params: { week: w.id }, props: { week: w } }));
+}
+const { week } = Astro.props;
+const ranking = await byIds(week.data.ranking, `weeks/${week.id} ranking`);
+---
+<Layout title={`ショート動画ランキング TOP${ranking.length}（${week.data.title}）`} description={week.data.intro}>
+  <h1>ショート動画ランキング TOP{ranking.length}（{week.data.title}）</h1>
+  <p class="intro">{week.data.intro}</p>
+  <p class="intro">編集部おすすめ。順位は編集部の主観によるものです。</p>
+  <VideoList videos={ranking} ranked />
+  <p><a href="/ranking/">過去のランキング一覧</a></p>
+</Layout>

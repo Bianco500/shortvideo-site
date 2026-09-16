@@ -1,0 +1,64 @@
+---
+interface Props { platform: 'x' | 'tiktok' | 'instagram'; html: string; url: string; title: string }
+const { platform, html, url, title } = Astro.props;
+---
+<div class="embed" data-platform={platform}>
+  <template set:html={html}></template>
+  <p class="embed-fallback"><a href={url} target="_blank" rel="noopener">{title}</a></p>
+</div>
+
+<style>
+  .embed { min-height: 560px; margin: 0 auto; max-width: 605px; }
+  .embed[data-platform="x"] { min-height: 260px; }
+  .embed :global(iframe) { max-width: 100% !important; }
+  .embed-fallback { color: #666; font-size: 14px; }
+</style>
+
+<script>
+  // 画面に近づいた埋め込みだけ本物に差し替える。1ページ10本を前提にした軽量版。
+  const SRC: Record<string, string> = {
+    x: 'https://platform.twitter.com/widgets.js',
+    instagram: 'https://www.instagram.com/embed.js',
+    tiktok: 'https://www.tiktok.com/embed.js',
+  };
+  const w = window as any;
+
+  function addScript(platform: string, force = false) {
+    const existing = document.querySelector(`script[src="${SRC[platform]}"]`);
+    if (existing && !force) return;
+    existing?.remove();
+    const s = document.createElement('script');
+    s.src = SRC[platform];
+    s.async = true;
+    document.body.appendChild(s);
+  }
+
+  function activate(el: HTMLElement, platform: string) {
+    if (platform === 'x') {
+      w.twttr?.widgets ? w.twttr.widgets.load(el) : addScript('x');
+    } else if (platform === 'instagram') {
+      w.instgrm?.Embeds ? w.instgrm.Embeds.process() : addScript('instagram');
+    } else if (platform === 'tiktok') {
+      // TikTok の embed.js は読み込み時にしか走査しないので、毎回入れ直す（非公式だが広く使われる手法）
+      addScript('tiktok', true);
+    }
+  }
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const el = e.target as HTMLElement;
+        io.unobserve(el);
+        const tpl = el.querySelector('template');
+        if (!tpl) continue;
+        el.querySelector('.embed-fallback')?.remove();
+        el.appendChild(tpl.content.cloneNode(true));
+        tpl.remove();
+        activate(el, el.dataset.platform ?? '');
+      }
+    },
+    { rootMargin: '600px 0px' },
+  );
+  document.querySelectorAll<HTMLElement>('.embed').forEach((el) => io.observe(el));
+</script>

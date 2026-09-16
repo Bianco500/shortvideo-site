@@ -1,0 +1,23 @@
+{
+  "name": "shortvideo-site",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "fetch-embeds": "node scripts/fetch-embeds.mjs",
+    "new": "node scripts/new-video.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.3.2",
+    "yaml": "^2.9.1"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

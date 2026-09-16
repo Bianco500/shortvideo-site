@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+import VideoList from '../components/VideoList.astro';
+import { getCollection } from 'astro:content';
+import { latestWeek, byIds } from '../lib/videos';
+import { SITE_NAME } from '../config';
+
+const week = await latestWeek();
+const featured = await byIds(week.data.featured, `weeks/${week.id} featured`);
+const ranking = await byIds(week.data.ranking, `weeks/${week.id} ranking`);
+const genres = (await getCollection('genres')).sort((a, b) => a.data.order - b.data.order);
+---
+<Layout title={`今週のおすすめショート動画とランキング（${week.data.title}）`}>
+  <h1>今週のおすすめショート動画</h1>
+  <p class="intro">{week.data.intro}</p>
+  <p class="intro">編集部おすすめ・{week.data.title}</p>
+  <VideoList videos={featured} />
+
+  <h2>今週のショート動画ランキング TOP{ranking.length}</h2>
+  <p class="intro">編集部の主観で選んだ順位です。<a href={`/ranking/${week.id}/`}>今週のランキングを全部見る</a></p>
+  <VideoList videos={ranking.slice(0, 5)} ranked />
+
+  <h2>ジャンルから探す</h2>
+  <p class="genre-list">
+    {genres.map((g) => <a href={`/category/${g.id}/`}>{g.data.name}</a>)}
+  </p>
+</Layout>

@@ -1,0 +1,29 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import VideoList from '../../../components/VideoList.astro';
+import { getCollection } from 'astro:content';
+import { visibleVideos } from '../../../lib/videos';
+
+export async function getStaticPaths({ paginate }) {
+  const genres = await getCollection('genres');
+  const videos = await visibleVideos();
+  return genres.flatMap((g) =>
+    paginate(videos.filter((v) => v.data.genres.includes(g.id)), {
+      params: { slug: g.id },
+      props: { genre: g },
+      pageSize: 10,
+    }),
+  );
+}
+const { page, genre } = Astro.props;
+const name = genre.data.name;
+---
+<Layout title={`${name}のおすすめショート動画${page.currentPage > 1 ? `（${page.currentPage}ページ目）` : ''}`} description={genre.data.intro}>
+  <h1>{name}のおすすめショート動画</h1>
+  <p class="intro">{genre.data.intro}</p>
+  <VideoList videos={page.data} />
+  <p class="pager">
+    {page.url.prev && <a href={page.url.prev}>← 新しい方へ</a>}
+    {page.url.next && <a href={page.url.next}>古い方へ →</a>}
+  </p>
+</Layout>

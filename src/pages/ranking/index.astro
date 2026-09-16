@@ -1,0 +1,11 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { weeksDesc } from '../../lib/videos';
+const weeks = await weeksDesc();
+---
+<Layout title="ショート動画 週間ランキング一覧">
+  <h1>ショート動画 週間ランキング一覧</h1>
+  <ul>
+    {weeks.map((w) => <li><a href={`/ranking/${w.id}/`}>{w.data.title}</a></li>)}
+  </ul>
+</Layout>
