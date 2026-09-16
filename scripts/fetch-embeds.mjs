@@ -39,9 +39,11 @@ for (const f of files) {
 
   try {
     const res = await fetch(ENDPOINT[v.platform](normalizeUrl(v.url)), { headers: { 'user-agent': 'shortvideo-site/1.0' } });
-    if (res.status === 404 || res.status === 400) {
+    // 404/400=削除、403=非公開・制限で公開ページに出せない。いずれも恒久的な NG
+    if (res.status === 404 || res.status === 400 || res.status === 403) {
+      const why = res.status === 403 ? '非公開/制限' : '削除';
       next[id] = { ok: false, error: `HTTP ${res.status}`, checked_at: today };
-      ng.push(`${id}  ${v.url}  (HTTP ${res.status})`);
+      ng.push(`${id}  ${v.url}  (HTTP ${res.status} ${why})`);
     } else if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     } else {
