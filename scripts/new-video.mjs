@@ -1,5 +1,5 @@
 // 使い方: npm run new -- <URL> [genre ...]
-// X / TikTok は oEmbed から author と title を埋める。Instagram は雛形のみ。
+// X / TikTok は oEmbed から author と title を埋める。Instagram は URL だけで表示できる（author は URL に無いので手で書く）。
 import { writeFile, access } from 'node:fs/promises';
 
 const [rawUrl, ...genres] = process.argv.slice(2);
@@ -15,6 +15,11 @@ function normalizeUrl(u) {
     const m = url.pathname.match(/^\/([^/]+)\/status\/(\d+)/);
     if (m) url.pathname = `/${m[1]}/status/${m[2]}`;
   }
+  if (/(^|\.)instagram\.com$/.test(url.hostname)) {
+    url.hostname = 'www.instagram.com';
+    const m = url.pathname.match(/^\/(?:[^/]+\/)?(reels?|p|tv)\/([A-Za-z0-9_-]+)/);
+    if (m) url.pathname = `/${m[1] === 'reels' ? 'reel' : m[1]}/${m[2]}/`;
+  }
   return url.toString();
 }
 const url = normalizeUrl(rawUrl);
@@ -23,7 +28,7 @@ const platform = /tiktok\.com/.test(url) ? 'tiktok' : /(^|\/\/)(www\.)?(x|twitte
 if (!platform) { console.error('対応外の URL'); process.exit(1); }
 
 const postId = (url.match(/\/(video|status|reel|p)\/([A-Za-z0-9_-]+)/) ?? [])[2] ?? Date.now().toString();
-const ymd = new Date().toISOString().slice(0, 10);
+const ymd = new Date().toLocaleDateString('sv-SE'); // ローカル日付 YYYY-MM-DD（toISOString は UTC で朝に前日になる）
 const file = `src/data/videos/${ymd.replace(/-/g, '')}-${platform}-${postId}.yaml`;
 if (await access(file).then(() => true, () => false)) { console.error(`既にあります: ${file}`); process.exit(1); }
 
@@ -51,7 +56,7 @@ author: ${q(author)}
 added: ${ymd}
 status: active
 hidden_reason:
-embed_html:${platform === 'instagram' ? ' |\n  （ここに公式の埋め込みコードを貼る）' : ''}
+embed_html:
 `;
 await writeFile(file, yaml);
-console.log(`作成: ${file}\n次: title と comment を書く${platform === 'instagram' ? '。embed_html に埋め込みコードを貼る' : ''}`);
+console.log(`作成: ${file}\n次: title と comment を書く${platform === 'instagram' ? '。author も書く（Instagram は自動で取れない）' : ''}`);

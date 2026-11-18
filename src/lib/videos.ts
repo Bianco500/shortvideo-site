@@ -8,10 +8,21 @@ export type VideoView = CollectionEntry<'videos'> & { html: string };
 
 const stripScripts = (h: string) => h.replace(/<script[\s\S]*?<\/script>/gi, '').trim();
 
+/** Instagram 公式の埋め込みと同じ blockquote を URL から組み立てる。embed.js がこれを公式プレイヤーに置き換える */
+function instagramBlockquote(url: string): string {
+  const m = url.match(/instagram\.com\/(reels?|p|tv)\/([A-Za-z0-9_-]+)/);
+  if (!m) return '';
+  const kind = m[1] === 'reels' ? 'reel' : m[1];
+  const permalink = `https://www.instagram.com/${kind}/${m[2]}/`;
+  return `<blockquote class="instagram-media" data-instgrm-permalink="${permalink}" data-instgrm-version="14"></blockquote>`;
+}
+
 function withHtml(v: CollectionEntry<'videos'>): VideoView | null {
   if (v.data.status === 'hidden') return null;
   if (v.data.platform === 'instagram') {
-    return { ...v, html: stripScripts(v.data.embed_html ?? '') };
+    const html = v.data.embed_html ? stripScripts(v.data.embed_html) : instagramBlockquote(v.data.url);
+    if (!html) return null;
+    return { ...v, html };
   }
   const c = embedCache[v.id];
   if (!c?.ok || !c.html) return null; // 未取得 or 削除済み

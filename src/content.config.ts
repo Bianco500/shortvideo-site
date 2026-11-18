@@ -17,9 +17,6 @@ const videos = defineCollection({
       hidden_reason: z.string().nullish(),
       embed_html: z.string().nullish(),
     })
-    .refine((v) => v.platform !== 'instagram' || !!v.embed_html, {
-      message: 'instagram は embed_html が必須',
-    })
     .refine((v) => v.status !== 'hidden' || !!v.hidden_reason, {
       message: 'hidden にするときは hidden_reason を書く',
     }),
