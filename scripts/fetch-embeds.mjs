@@ -22,11 +22,17 @@ function normalizeUrl(u) {
   }
   return url.toString();
 }
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('sv-SE'); // ローカル日付（Actions 上は UTC）
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const prev = JSON.parse(await readFile(OUT, 'utf8').catch(() => '{}'));
 const next = {};
+// 結果が前回と同じなら前回の記録をそのまま使う。checked_at は「最後に変化した日」になり、
+// 何も変わらない週はファイルが変わらないので、ボットのコミットは「何かが変わった」合図になる
+const settle = (id, entry) => {
+  const p = prev[id];
+  next[id] = p && p.ok === entry.ok && p.html === entry.html && p.error === entry.error ? p : { ...entry, checked_at: today };
+};
 const ng = [];
 const warn = [];
 let ok = 0;
@@ -42,13 +48,13 @@ for (const f of files) {
     // 404/400=削除、403=非公開・制限で公開ページに出せない。いずれも恒久的な NG
     if (res.status === 404 || res.status === 400 || res.status === 403) {
       const why = res.status === 403 ? '非公開/制限' : '削除';
-      next[id] = { ok: false, error: `HTTP ${res.status}`, checked_at: today };
+      settle(id, { ok: false, error: `HTTP ${res.status}` });
       ng.push(`${id}  ${v.url}  (HTTP ${res.status} ${why})`);
     } else if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     } else {
       const j = await res.json();
-      next[id] = { ok: true, html: stripScripts(j.html), checked_at: today };
+      settle(id, { ok: true, html: stripScripts(j.html) });
       ok++;
     }
   } catch (e) {
@@ -57,7 +63,7 @@ for (const f of files) {
       next[id] = prev[id];
       warn.push(`${id}  ${e.message} → 前回の結果を保持`);
     } else {
-      next[id] = { ok: false, error: e.message, checked_at: today };
+      settle(id, { ok: false, error: e.message });
       ng.push(`${id}  ${v.url}  (${e.message}; 初回取得失敗)`);
     }
   }
